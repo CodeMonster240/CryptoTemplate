@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneCoin Value</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            width: 80%;
+            text-align: center;
+        }
+        .text-container {
+            margin-left: 50px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        .value-box {
+            font-size: 4em;
+            color: #00ff7f;
+            transition: opacity 1s, transform 1s, color 1s;
+        }
+        .fade-out {
+            opacity: 0;
+            transform: scale(0.9) rotate(-5deg);
+        }
+        .fade-in {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        canvas {
+            width: 600px !important;
+            height: 400px !important;
+        }
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.5em;
+            background-color: #00ff7f;
+            color: #121212;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #00cc66;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 500px;
+            width: 80%;
+        }
+        .modal h2 {
+            margin-top: 0;
+        }
+        .modal input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 1em;
+        }
+        .modal button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #00ff7f;
+            color: #121212;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .modal button:hover {
+            background-color: #00cc66;
+        }
+        .close-btn {
+            background-color: #ff5555;
+            color: #ffffff;
+            margin-top: 10px;
+        }
+        .close-btn:hover {
+            background-color: #cc4444;
+        }
+        .coin-info {
+            font-size: 1.5em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="valueChart"></canvas>
+        <div class="text-container">
+            <h1>OneCoin Value</h1>
+            <div class="value-box fade-in" id="oneCoinValue">$1.00 USD</div>
+            <div class="coin-info" id="coinInfo">You have 100 OneCoins</div>
+            <button class="button" onclick="openAddModal()">Add OneCoins</button>
+            <button class="button" onclick="openExchangeModal()">Exchange for Credits</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="addModal">
+        <div class="modal">
+            <h2>Add OneCoins</h2>
+            <input type="number" id="addCoinAmount" placeholder="Enter OneCoin amount">
+            <button onclick="addCoins()">Add</button>
+            <button class="close-btn" onclick="closeModal('addModal')">Close</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="exchangeModal">
+        <div class="modal">
+            <h2>How many OneCoins would you like to remove?</h2>
+            <input type="number" id="removeCoinAmount" placeholder="Enter OneCoin amount">
+            <button onclick="exchangeCoins()">Remove</button>
+            <button class="close-btn" onclick="closeModal('exchangeModal')">Close</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let userCoins = 100;
+
+        function getRandomValue(min, max) {
+            return (Math.random() * (max - min) + min).toFixed(2);
+        }
+
+        function updateOneCoinValue() {
+            const minValue = 0.50; // Minimum possible value for OneCoin
+            const maxValue = 2.00; // Maximum possible value for OneCoin
+            const oneCoinValue = getRandomValue(minValue, maxValue);
+            const valueBox = document.getElementById('oneCoinValue');
+
+            // Fade out the current value
+            valueBox.classList.remove('fade-in');
+            valueBox.classList.add('fade-out');
+
+            setTimeout(() => {
+                // Update the value and fade it back in
+                valueBox.innerText = `$${oneCoinValue} USD`;
+                valueBox.classList.remove('fade-out');
+                valueBox.classList.add('fade-in');
+
+                // Update the chart with the new value
+                addData(chart, '', oneCoinValue);
+            }, 1000); // Duration matches the transition duration
+        }
+
+        function addData(chart, label, data) {
+            chart.data.labels.push(label);
+            chart.data.datasets.forEach((dataset) => {
+                dataset.data.push(data);
+            });
+            chart.update();
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function openAddModal() {
+            openModal('addModal');
+        }
+
+        function openExchangeModal() {
+            openModal('exchangeModal');
+        }
+
+        function addCoins() {
+            const addCoinAmount = document.getElementById('addCoinAmount').value;
+            if (addCoinAmount && addCoinAmount > 0) {
+                userCoins += parseInt(addCoinAmount);
+                document.getElementById('coinInfo').innerText = `You have ${userCoins} OneCoins`;
+                closeModal('addModal');
+            } else {
+                alert('Please enter a valid amount of OneCoin.');
+            }
+        }
+
+        function exchangeCoins() {
+            const removeCoinAmount = document.getElementById('removeCoinAmount').value;
+            if (removeCoinAmount && removeCoinAmount > 0 && removeCoinAmount <= userCoins) {
+                userCoins -= parseInt(removeCoinAmount);
+                document.getElementById('coinInfo').innerText = `You have ${userCoins} OneCoins`;
+                alert(`${removeCoinAmount} OneCoins removed!`);
+                closeModal('exchangeModal');
+            } else if (removeCoinAmount > userCoins) {
+                alert('You do not have enough OneCoins.');
+            } else {
+                alert('Please enter a valid amount of OneCoin.');
+            }
+        }
+
+        // Initial update
+        updateOneCoinValue();
+        setInterval(updateOneCoinValue, 15000); // Update every 15 seconds (15000 milliseconds)
+
+        // Create the chart
+        const ctx = document.getElementById('valueChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Labels for the X-axis
+                datasets: [{
+                    label: '',
+                    data: [],
+                    borderColor: '#00ff7f',
+                    backgroundColor: 'rgba(0, 255, 127, 0.1)',
+                    fill: false,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Updates'
+                        },
+                        ticks: {
+                            display: false // Hide the ticks on the x-axis
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Value in USD'
+                        },
+                        beginAtZero: false
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
